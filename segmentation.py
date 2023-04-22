@@ -25,15 +25,15 @@ def dfs(arr, visited, groups, group_id, r, c):
                 dfs(arr, visited, groups, group_id, r2, c2)
 
 
-def segmentation(arr):
-    visited = np.zeros_like(arr, dtype=bool)
-    groups = np.zeros_like(arr, dtype=int)
+def calculate_segmentation(genome):
+    visited = np.zeros_like(genome, dtype=bool)
+    groups = np.zeros_like(genome, dtype=int)
     group_id = 0
 
-    for r in range(arr.shape[0]):
-        for c in range(arr.shape[1]):
+    for r in range(genome.shape[0]):
+        for c in range(genome.shape[1]):
             if not visited[r, c]:
-                dfs(arr, visited, groups, group_id, r, c)
+                dfs(genome, visited, groups, group_id, r, c)
                 group_id += 1
 
     return groups
