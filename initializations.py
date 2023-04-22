@@ -30,3 +30,15 @@ def generate_random_genome() -> np.ndarray:
     genome[-1, -1] = np.random.choice([0, 3, 4])
 
     return genome
+
+
+def generate_random_population(population_size: int) -> list:
+    """Generate a random population.
+
+    Args:
+        population_size (int): Size of the population.
+
+    Returns:
+        list: List of random genomes.
+    """
+    return [generate_random_genome() for _ in range(population_size)]
