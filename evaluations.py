@@ -1,7 +1,12 @@
 import numpy as np
+import tqdm
+from numba import njit
 
 import problem
 from segmentation import calculate_segmentation
+
+
+problem_image = problem.image
 
 
 def color_distance(color1, color2):
@@ -28,20 +33,15 @@ def calculate_edge_value(segmentation):
     """
     edge_value = 0
 
-    for r in range(problem.image_size[0]):
-        for c in range(problem.image_size[1]):
-            for neighbor in problem.neighbors_list:
-                compare_r = r + neighbor[0]
-                compare_c = c + neighbor[1]
-                if compare_r < 0 or compare_r >= problem.image_size[0]:
-                    continue
-                if compare_c < 0 or compare_c >= problem.image_size[1]:
-                    continue
-                if segmentation[r, c] != segmentation[r + neighbor[0], c + neighbor[1]]:
-                    edge_value += color_distance(
-                        problem.image[r, c],
-                        problem.image[r + neighbor[0], c + neighbor[1]],
-                    )
+    for dr, dc in problem.neighbors_list:
+        shifted_segmentation = np.roll(segmentation, shift=(dr, dc), axis=(0, 1))
+        shifted_image = np.roll(problem_image, shift=(dr, dc), axis=(0, 1))
+
+        mask = segmentation != shifted_segmentation
+        color_dists = np.sqrt(np.sum((problem_image - shifted_image) ** 2, axis=-1))
+
+        edge_value += np.sum(color_dists * mask)
+
     return edge_value
 
 
@@ -55,20 +55,26 @@ def calculate_connectiveness(segmentation):
         float: Connectiveness.
     """
     connectiveness = 0
+    neighbors = np.array(problem.neighbors_list)
 
-    for r in range(problem.image_size[0]):
-        for c in range(problem.image_size[1]):
-            non_connected_neighbors = 0
-            for neighbor in problem.neighbors_list:
-                compare_r = r + neighbor[0]
-                compare_c = c + neighbor[1]
-                if compare_r < 0 or compare_r >= problem.image_size[0]:
-                    continue
-                if compare_c < 0 or compare_c >= problem.image_size[1]:
-                    continue
-                if segmentation[r, c] != segmentation[r + neighbor[0], c + neighbor[1]]:
-                    non_connected_neighbors += 1
-            connectiveness += non_connected_neighbors / len(problem.neighbors_list)
+    for neighbor in neighbors:
+        shifted_segmentation = np.roll(segmentation, shift=tuple(neighbor), axis=(0, 1))
+
+        # Handle border cases by masking out invalid comparisons
+        mask = np.ones_like(segmentation, dtype=bool)
+        if neighbor[0] > 0:
+            mask[: neighbor[0], :] = False
+        elif neighbor[0] < 0:
+            mask[neighbor[0] :, :] = False
+
+        if neighbor[1] > 0:
+            mask[:, : neighbor[1]] = False
+        elif neighbor[1] < 0:
+            mask[:, neighbor[1] :] = False
+
+        non_connected_neighbors = np.sum((segmentation != shifted_segmentation) & mask)
+        connectiveness += non_connected_neighbors / len(problem.neighbors_list)
+
     return connectiveness
 
 
@@ -82,20 +88,19 @@ def calculate_deviation(segmentation):
         float: Deviation.
     """
     num_segments = np.max(segmentation) + 1
-
     total_deviation = 0
 
     for segment in range(num_segments):
-        segment_colors = problem.image[segmentation == segment]
-        # calculate mean color of segment
-        segment_mean_color = np.mean(segment_colors, axis=0)
+        segment_mask = segmentation == segment
+        segment_colors = problem_image[segment_mask]
 
-        # calculate deviation of segment
-        squared_deviations = (segment_colors - segment_mean_color) ** 2
+        segment_mean_color = np.mean(segment_colors, axis=0)
+        squared_deviations = np.square(segment_colors - segment_mean_color)
         sum_squared_deviations = np.sum(squared_deviations, axis=0)
-        segment_deviation = np.sum(np.sqrt(sum_squared_deviations))
-        # add deviation to total deviation
+        segment_deviation = np.sqrt(np.sum(sum_squared_deviations))
+
         total_deviation += segment_deviation
+
     return total_deviation
 
 
@@ -111,7 +116,7 @@ def evaluate_population(population):
     edge_values = []
     connectivenesses = []
     deviations = []
-    for genome in population:
+    for genome in tqdm.tqdm(population):
         segmentation = calculate_segmentation(genome)
         edge_value = calculate_edge_value(segmentation)
         connectiveness = calculate_connectiveness(segmentation)
@@ -120,3 +125,67 @@ def evaluate_population(population):
         connectivenesses.append(connectiveness)
         deviations.append(deviation)
     return edge_values, connectivenesses, deviations
+
+
+def evaluate_population_from_segments(segments):
+    """Evaluate the population from their segments.
+
+    Args:
+        segments (list): List of segments.
+
+    Returns:
+        tuple: Tuple of lists containing the edge values, connectivenesses and deviations of the genomes.
+    """
+    edge_values = []
+    connectivenesses = []
+    deviations = []
+    for segmentation in tqdm.tqdm(segments):
+        segmentation = segmentation.reshape(
+            (problem.image_size[0], problem.image_size[1])
+        ).astype(int)
+        edge_value = calculate_edge_value(segmentation)
+        connectiveness = calculate_connectiveness(segmentation)
+        deviation = calculate_deviation(segmentation)
+        edge_values.append(edge_value)
+        connectivenesses.append(connectiveness)
+        deviations.append(deviation)
+    return edge_values, connectivenesses, deviations
+
+
+def main():
+    """Main function."""
+    from initializations import generate_random_population
+    from visualization import plot_type_2
+
+    population = np.random.randint(
+        1, 3, (4, problem.image_size[0], problem.image_size[1])
+    )
+    # population = generate_random_population(3)
+    evals = evaluate_population(population)
+    # population = np.random.randint(
+    #     0, 2, (10, problem.image_size[0] * problem.image_size[1])
+    # )
+    # print(population.shape)
+    # evals = evaluate_population_from_segments(population)
+    print(evals)
+    segment = calculate_segmentation(population[0])
+    plot_type_2(segment)
+
+
+if __name__ == "__main__":
+    import os
+    import cProfile, pstats, io
+    from pstats import SortKey
+
+    # start profiler
+    pr = cProfile.Profile()
+    pr.enable()
+
+    main()
+    # collect profile
+    pr.disable()
+    s = io.StringIO()
+    sortby = SortKey.CUMULATIVE
+    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+    os.makedirs("prof", exist_ok=True)
+    ps.dump_stats("prof/eval.prof")
