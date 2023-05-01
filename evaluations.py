@@ -1,25 +1,8 @@
 import numpy as np
 import tqdm
-from numba import njit
 
 import problem
 from segmentation import calculate_segmentation
-
-
-problem_image = problem.image
-
-
-def color_distance(color1, color2):
-    """Calculate the distance between two colors.
-
-    Args:
-        color1 (np.ndarray): First color.
-        color2 (np.ndarray): Second color.
-
-    Returns:
-        float: Distance between the two colors.
-    """
-    return np.sum(np.sqrt((color1 - color2) ** 2))
 
 
 def calculate_edge_value(segmentation):
@@ -35,10 +18,10 @@ def calculate_edge_value(segmentation):
 
     for dr, dc in problem.neighbors_list:
         shifted_segmentation = np.roll(segmentation, shift=(dr, dc), axis=(0, 1))
-        shifted_image = np.roll(problem_image, shift=(dr, dc), axis=(0, 1))
+        shifted_image = np.roll(problem.image, shift=(dr, dc), axis=(0, 1))
 
         mask = segmentation != shifted_segmentation
-        color_dists = np.sqrt(np.sum((problem_image - shifted_image) ** 2, axis=-1))
+        color_dists = np.sqrt(np.sum((problem.image - shifted_image) ** 2, axis=-1))
 
         edge_value += np.sum(color_dists * mask)
 
@@ -92,7 +75,7 @@ def calculate_deviation(segmentation):
 
     for segment in range(num_segments):
         segment_mask = segmentation == segment
-        segment_colors = problem_image[segment_mask]
+        segment_colors = problem.image[segment_mask]
 
         segment_mean_color = np.mean(segment_colors, axis=0)
         squared_deviations = np.square(segment_colors - segment_mean_color)
@@ -118,12 +101,9 @@ def evaluate_population(population):
     deviations = []
     for genome in tqdm.tqdm(population):
         segmentation = calculate_segmentation(genome)
-        edge_value = calculate_edge_value(segmentation)
-        connectiveness = calculate_connectiveness(segmentation)
-        deviation = calculate_deviation(segmentation)
-        edge_values.append(edge_value)
-        connectivenesses.append(connectiveness)
-        deviations.append(deviation)
+        edge_values.append(calculate_edge_value(segmentation))
+        connectivenesses.append(calculate_connectiveness(segmentation))
+        deviations.append(calculate_deviation(segmentation))
     return edge_values, connectivenesses, deviations
 
 
@@ -141,24 +121,20 @@ def evaluate_population_from_segments(segments):
     deviations = []
     for segmentation in tqdm.tqdm(segments):
         segmentation = segmentation.reshape(
-            (problem.image_size[0], problem.image_size[1])
+            (problem.image_shape[0], problem.image_shape[1])
         ).astype(int)
-        edge_value = calculate_edge_value(segmentation)
-        connectiveness = calculate_connectiveness(segmentation)
-        deviation = calculate_deviation(segmentation)
-        edge_values.append(edge_value)
-        connectivenesses.append(connectiveness)
-        deviations.append(deviation)
+        edge_values.append(calculate_edge_value(segmentation))
+        connectivenesses.append(calculate_connectiveness(segmentation))
+        deviations.append(calculate_deviation(segmentation))
     return edge_values, connectivenesses, deviations
 
 
 def main():
     """Main function."""
-    from initializations import generate_random_population
     from visualization import plot_type_2
 
     population = np.random.randint(
-        1, 3, (4, problem.image_size[0], problem.image_size[1])
+        1, 3, (4, problem.image_shape[0], problem.image_shape[1])
     )
     # population = generate_random_population(3)
     evals = evaluate_population(population)
