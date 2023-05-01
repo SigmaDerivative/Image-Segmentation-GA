@@ -18,17 +18,7 @@ def generate_random_genome() -> np.ndarray:
         np.ndarray: Numpy array filled with random values.
     """
     # initialize genome
-    genome = np.random.randint(0, 5, (problem.image_size[0], problem.image_size[1]))
-    # overwrite edges with legal values
-    # genome[0, :] = np.random.choice([0, 1, 2, 3], size=problem.image_size[1])
-    # genome[-1, :] = np.random.choice([0, 2, 3, 4], size=problem.image_size[1])
-    # genome[:, 0] = np.random.choice([0, 1, 2, 3], size=problem.image_size[0])
-    # genome[:, -1] = np.random.choice([0, 1, 3, 4], size=problem.image_size[0])
-    # overwrite corners with legal values
-    # genome[0, 0] = np.random.choice([0, 1, 2])
-    # genome[0, -1] = np.random.choice([0, 1, 4])
-    # genome[-1, 0] = np.random.choice([0, 2, 3])
-    # genome[-1, -1] = np.random.choice([0, 3, 4])
+    genome = np.random.randint(0, 5, (problem.image_shape[0], problem.image_shape[1]))
 
     return genome
 
@@ -108,7 +98,7 @@ def generate_random_genome_from_MST() -> np.ndarray:
     """
     # initialize mst
     array = create_connected_array_with_arcs(
-        problem.image_size[0], problem.image_size[1]
+        problem.image_shape[0], problem.image_shape[1]
     )
     decoupling_amount = np.random.randint(1, 100)
     # decouple some edges
@@ -116,8 +106,11 @@ def generate_random_genome_from_MST() -> np.ndarray:
     return genome.flatten()
 
 
-def generate_k_meaned_segmentation() -> np.ndarray:
+def generate_k_meaned_segmentation(flat: bool = False) -> np.ndarray:
     """Generate a segmentation from k means.
+
+    Args:
+        flat (bool, optional): Whether to return a flat segmentation or not. Defaults to False.
 
     Returns:
         np.ndarray: segmentation.
@@ -131,36 +124,71 @@ def generate_k_meaned_segmentation() -> np.ndarray:
     )
     # get cluster labels
     cluster_labels = neigh.labels_
-    segmentation = cluster_labels.reshape(problem.image_size[0], problem.image_size[1])
+    if not flat:
+        segmentation = cluster_labels.reshape(
+            problem.image_shape[0], problem.image_shape[1]
+        )
     return segmentation
 
 
-def generate_k_meaned_segmentation_flat() -> np.ndarray:
-    """Generate a segmentation from k means.
+def generate_mst_genome(problem):
+    rgb_matrix = problem.image
+    image_height, image_width, _ = problem.image_shape
+    neighbors_map = problem.neighbors_map
 
-    Returns:
-        np.ndarray: segmentation.
-    """
-    # randomize how many clusters
-    n_clusters = np.random.randint(3, 20)
-    # generate clusters with k nearest neighbors
-    # settings for faster runtime
-    neigh = KMeans(n_clusters=n_clusters, n_init=3, max_iter=40).fit(
-        problem.image.reshape(-1, 3)
-    )
-    # get cluster labels
-    segmentation = neigh.labels_
-    return segmentation
+    visited = np.zeros(image_height * image_width, dtype=bool)
+    mst = np.full((image_height, image_width), -1, dtype=int)
+    explorable = {
+        i * image_width + j for i in range(image_height) for j in range(image_width)
+    }
+
+    while explorable:
+        has_neighbor = True
+        current_index = explorable.pop()
+        current_node = np.array(
+            [current_index // image_width, current_index % image_width]
+        )
+        visited[current_index] = True
+
+        while has_neighbor:
+            neighbors = [
+                (i, current_node + neighbors_map[i])
+                for i in range(1, 5)
+                if 0 <= current_node[0] + neighbors_map[i][0] < image_height
+                and 0 <= current_node[1] + neighbors_map[i][1] < image_width
+                and not visited[
+                    (current_node[0] + neighbors_map[i][0]) * image_width
+                    + current_node[1]
+                    + neighbors_map[i][1]
+                ]
+            ]
+
+            if neighbors:
+                best_neighbor, next_node = min(
+                    neighbors,
+                    key=lambda x: np.sum(
+                        (rgb_matrix[tuple(current_node)] - rgb_matrix[tuple(x[1])]) ** 2
+                    ),
+                )
+                mst[current_node[0], current_node[1]] = best_neighbor
+                current_node = next_node
+                current_index = current_node[0] * image_width + current_node[1]
+                visited[current_index] = True
+                explorable.discard(current_index)
+            else:
+                visited[current_index] = True
+                mst[current_node[0], current_node[1]] = 0
+                has_neighbor = False
+
+    return mst
 
 
-def generate_random_population(population_size: int) -> list:
-    """Generate a random population.
+if __name__ == "__main__":
+    genome = generate_mst_genome(problem)
 
-    Args:
-        population_size (int): Size of the population.
+    from visualization import plot_type_2
+    from segmentation import calculate_segmentation
 
-    Returns:
-        list: List of random genomes.
-    """
+    seg = calculate_segmentation(genome)
 
-    return [generate_random_genome() for _ in range(population_size)]
+    plot_type_2(seg)
