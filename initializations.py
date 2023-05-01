@@ -1,7 +1,11 @@
+from typing import List, Dict, Tuple
+
 import numpy as np
 from sklearn.cluster import KMeans
 
 import problem
+from pixel import PixelNode
+from evaluations import color_distance
 
 
 def generate_random_genome() -> np.ndarray:
@@ -131,56 +135,94 @@ def generate_k_meaned_segmentation(flat: bool = False) -> np.ndarray:
     return segmentation
 
 
-def generate_mst_genome(problem):
-    rgb_matrix = problem.image
-    image_height, image_width, _ = problem.image_shape
+def get_updated_neighbours(pixel_node, pixel_nodes, problem):
     neighbors_map = problem.neighbors_map
+    image_height, image_width = problem.image_shape[:2]
+    rgb_matrix = problem.image
 
-    visited = np.zeros(image_height * image_width, dtype=bool)
-    mst = np.full((image_height, image_width), -1, dtype=int)
-    explorable = {
-        i * image_width + j for i in range(image_height) for j in range(image_width)
-    }
-
-    while explorable:
-        has_neighbor = True
-        current_index = explorable.pop()
-        current_node = np.array(
-            [current_index // image_width, current_index % image_width]
+    neighbours = []
+    for i in range(1, 5):
+        neighbour_addition = neighbors_map[i]
+        neigh_row, neigh_col = (
+            pixel_node.row + neighbour_addition[0],
+            pixel_node.col + neighbour_addition[1],
         )
-        visited[current_index] = True
+        neighbour_coords = (neigh_row, neigh_col)
 
-        while has_neighbor:
-            neighbors = [
-                (i, current_node + neighbors_map[i])
-                for i in range(1, 5)
-                if 0 <= current_node[0] + neighbors_map[i][0] < image_height
-                and 0 <= current_node[1] + neighbors_map[i][1] < image_width
-                and not visited[
-                    (current_node[0] + neighbors_map[i][0]) * image_width
-                    + current_node[1]
-                    + neighbors_map[i][1]
-                ]
+        if not (0 <= neigh_row < image_height and 0 <= neigh_col < image_width):
+            continue
+
+        this_color = rgb_matrix[pixel_node.row, pixel_node.col]
+        neighbour_color = rgb_matrix[neigh_row, neigh_col]
+        color_dist = color_distance(this_color, neighbour_color)
+
+        if neighbour_coords in pixel_nodes:
+            neighbour = pixel_nodes[neighbour_coords]
+            if not neighbour.traversed:
+                neighbour.update_shortest_distance(pixel_node, color_dist, i)
+                neighbours.append(neighbour)
+        else:
+            neighbour = PixelNode(neigh_row, neigh_col, pixel_node, color_dist, i, True)
+            neighbours.append(neighbour)
+            pixel_nodes[neighbour_coords] = neighbour
+
+    return neighbours
+
+
+def generate_mst_genome(problem):
+    image_height, image_width, _ = problem.image_shape
+
+    pixel_nodes = {}
+    explorables = []
+    starting_nodes = []
+
+    nr_of_trees = np.random.randint(2, 10)
+
+    for _ in range(nr_of_trees):
+        while True:
+            starting_coords = np.random.randint(0, image_height), np.random.randint(
+                0, image_width
+            )
+            if starting_coords not in pixel_nodes and not any(
+                starting_coords == (explorable.row, explorable.col)
+                for explorable in explorables
+            ):
+                break
+
+        current_node = PixelNode(*starting_coords, None, 0, 0, True)
+        neighbours = get_updated_neighbours(current_node, pixel_nodes, problem)
+        explorables.extend(neighbours)
+        starting_nodes.append(current_node)
+        pixel_nodes[starting_coords] = current_node
+
+    while explorables:
+        current_node = min(
+            explorables, key=lambda pixel_node: pixel_node.distance_from_start
+        )
+        current_node.traversed = True
+        current_node.parent.add_child(current_node)
+        explorables.remove(current_node)
+        neighbours = get_updated_neighbours(current_node, pixel_nodes, problem)
+        for pixel_node in neighbours:
+            if pixel_node not in explorables and not pixel_node.traversed:
+                explorables.append(pixel_node)
+
+    for root in starting_nodes:
+        root.segment_root = root
+        root.update_all_segment_root(False)
+
+    genome = (
+        np.array(
+            [
+                pixel_nodes[(row, col)].neighbour_direction
+                for row in range(image_height)
+                for col in range(image_width)
             ]
-
-            if neighbors:
-                best_neighbor, next_node = min(
-                    neighbors,
-                    key=lambda x: np.sum(
-                        (rgb_matrix[tuple(current_node)] - rgb_matrix[tuple(x[1])]) ** 2
-                    ),
-                )
-                mst[current_node[0], current_node[1]] = best_neighbor
-                current_node = next_node
-                current_index = current_node[0] * image_width + current_node[1]
-                visited[current_index] = True
-                explorable.discard(current_index)
-            else:
-                visited[current_index] = True
-                mst[current_node[0], current_node[1]] = 0
-                has_neighbor = False
-
-    return mst
+        )
+        .reshape(image_height, image_width)
+        .astype(np.uint8)
+    )
+    return genome
 
 
 if __name__ == "__main__":
