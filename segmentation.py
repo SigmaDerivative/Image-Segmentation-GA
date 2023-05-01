@@ -2,13 +2,13 @@ import numpy as np
 
 
 def is_connected(arr, r1, c1, r2, c2):
-    if r1 == r2 and c1 == c2 - 1 and (arr[r1, c1] == 2 or arr[r2, c2] == 4):
+    if r1 == r2 and c1 == c2 - 1 and (arr[r1, c1] == 1 or arr[r2, c2] == 2):
         return True
-    elif r1 == r2 and c1 == c2 + 1 and (arr[r1, c1] == 4 or arr[r2, c2] == 2):
+    elif r1 == r2 and c1 == c2 + 1 and (arr[r1, c1] == 2 or arr[r2, c2] == 1):
         return True
-    elif r1 == r2 - 1 and c1 == c2 and (arr[r1, c1] == 1 or arr[r2, c2] == 3):
+    elif r1 == r2 - 1 and c1 == c2 and (arr[r1, c1] == 4 or arr[r2, c2] == 3):
         return True
-    elif r1 == r2 + 1 and c1 == c2 and (arr[r1, c1] == 3 or arr[r2, c2] == 1):
+    elif r1 == r2 + 1 and c1 == c2 and (arr[r1, c1] == 3 or arr[r2, c2] == 4):
         return True
     return False
 
@@ -17,7 +17,7 @@ def dfs(arr, visited, groups, group_id, r, c):
     visited[r, c] = True
     groups[r, c] = group_id
 
-    directions = [(1, 0), (0, 1), (-1, 0), (0, -1)]
+    directions = [(0, 1), (0, -1), (-1, 0), (1, 0)]
     for _, direc in enumerate(directions):
         r2, c2 = r + direc[0], c + direc[1]
         if 0 <= r2 < arr.shape[0] and 0 <= c2 < arr.shape[1]:
