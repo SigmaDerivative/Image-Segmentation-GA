@@ -10,6 +10,7 @@ from scipy.ndimage.filters import gaussian_filter
 import problem
 from pixel import PixelNode
 from evaluations import color_distance
+from segmentation import calculate_segmentation
 
 
 def create_connected_array_with_arcs(rows, cols):
@@ -141,6 +142,28 @@ def get_crossover_indices(nr_of_sections: int) -> List[List[int]]:
     return selection_sets
 
 
+def get_crossover_indices_from_genomes(genomes: List[np.ndarray]) -> List[List[int]]:
+    genome1 = genomes[0]
+    genome2 = genomes[1]
+    segment1 = calculate_segmentation(genome1)
+    segment2 = calculate_segmentation(genome2)
+    num_segments1 = np.max(segment1)
+    num_segments2 = np.max(segment2)
+
+    # find segments to split in crossover
+    selection_sets = []
+    if np.random.randint(0, 2) == 0:
+        # split segments in genome1
+        for i in range(num_segments1):
+            selection_sets.append(np.where(segment1 == i + 1)[0])
+    else:
+        # split segments in genome2
+        for i in range(num_segments2):
+            selection_sets.append(np.where(segment2 == i + 1)[0])
+
+    return selection_sets
+
+
 def generate_k_meaned_segmentation(flat: bool = False) -> np.ndarray:
     """Generate a segmentation from k means.
 
@@ -152,8 +175,8 @@ def generate_k_meaned_segmentation(flat: bool = False) -> np.ndarray:
         np.ndarray: segmentation.
     """
     # randomize how many clusters
-    n_clusters = np.random.randint(4, 8)
-    filter_sigma = np.random.uniform(2, 3)
+    n_clusters = np.random.randint(4, 7)
+    filter_sigma = np.random.uniform(2, 3.5)
     # generate clusters with k nearest neighbors
     # settings for faster runtime
     neigh = KMeans(n_clusters=n_clusters, n_init=3, max_iter=40).fit(
