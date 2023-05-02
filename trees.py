@@ -1,4 +1,6 @@
 from typing import List, Dict, Tuple
+from collections import defaultdict
+import heapq
 
 import numpy as np
 
@@ -77,37 +79,42 @@ def divide_into_trees(nr_of_trees: int) -> Dict[Tuple[int, int], PixelNode]:
     image_height, image_width, _ = problem.image_shape
 
     pixel_nodes = {}
-    explorables = []
+    explorables = []  # Priority queue (heap) instead of list
     starting_nodes = []
+
+    # Optimize starting coordinates generation
+    unique_coords = set(
+        zip(
+            np.random.randint(0, image_height, size=nr_of_trees * 2),
+            np.random.randint(0, image_width, size=nr_of_trees * 2),
+        )
+    )
 
     for _ in range(nr_of_trees):
         while True:
-            starting_coords = np.random.randint(0, image_height), np.random.randint(
-                0, image_width
-            )
-            if starting_coords not in pixel_nodes and not any(
-                starting_coords == (explorable.row, explorable.col)
-                for explorable in explorables
-            ):
+            starting_coords = unique_coords.pop()
+            if starting_coords not in pixel_nodes:
                 break
 
         current_node = PixelNode(*starting_coords, None, 0, 0, True)
         neighbours = current_node.get_updated_neighbours(pixel_nodes)
-        explorables.extend(neighbours)
+        for neighbour in neighbours:
+            heapq.heappush(explorables, (neighbour.distance_from_start, neighbour))
         starting_nodes.append(current_node)
         pixel_nodes[starting_coords] = current_node
 
     while explorables:
-        current_node = min(
-            explorables, key=lambda pixel_node: pixel_node.distance_from_start
-        )
+        _, current_node = heapq.heappop(explorables)
+        if current_node.traversed:
+            continue
         current_node.traversed = True
         current_node.parent.add_child(current_node)
-        explorables.remove(current_node)
         neighbours = current_node.get_updated_neighbours(pixel_nodes)
         for pixel_node in neighbours:
-            if pixel_node not in explorables and not pixel_node.traversed:
-                explorables.append(pixel_node)
+            if not pixel_node.traversed:
+                heapq.heappush(
+                    explorables, (pixel_node.distance_from_start, pixel_node)
+                )
 
     for root in starting_nodes:
         root.root = root
@@ -128,3 +135,32 @@ def get_crossover_indices(nr_of_sections: int) -> List[List[int]]:
         selection_sets[index].append(coords[0] * problem.image_shape[1] + coords[1])
 
     return selection_sets
+
+
+def get_border_pixels(
+    pixel_nodes: Dict[Tuple[int, int], PixelNode]
+) -> Dict[PixelNode, List[PixelNode]]:
+    border_pixels = defaultdict(list)
+    for row in range(problem.image_shape[0]):
+        for col in range(problem.image_shape[1]):
+            coords = (row, col)
+            current_pixel = pixel_nodes[coords]
+            if is_border_pixel(coords, pixel_nodes):
+                border_pixels[current_pixel.root].append(current_pixel)
+
+    return border_pixels
+
+
+def is_border_pixel(
+    coords: Tuple[int, int], pixel_nodes: Dict[Tuple[int, int], PixelNode]
+) -> bool:
+    root = pixel_nodes[coords].root
+    for i in range(1, 5):  # 4 nearest neighbors
+        neigh_coords = (
+            coords[0] + problem.neighbors_map[i][0],
+            coords[1] + problem.neighbors_map[i][1],
+        )
+        if neigh_coords in pixel_nodes:
+            if pixel_nodes[neigh_coords].root != root:
+                return True
+    return False

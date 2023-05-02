@@ -34,6 +34,11 @@ class PixelNode:
             self.neighbour_direction = neighbour_direction
             self.root = self
 
+    def __lt__(self, other):
+        if not isinstance(other, PixelNode):
+            return NotImplemented
+        return self.distance_from_start < other.distance_from_start
+
     def update_shortest_distance(
         self, parent, edge_distance: float, neighbour_direction: int
     ):
