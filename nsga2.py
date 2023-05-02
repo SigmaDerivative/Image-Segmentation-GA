@@ -117,7 +117,6 @@ class NSGA2:
         genome.mutate()
 
     def get_tournament_winners(self):
-        # current_population. Ranks should be up to date.
         winners = []
         for tournaments in range(2):
             participant_indices = np.random.randint(
@@ -132,7 +131,9 @@ class NSGA2:
         return winners
 
     def get_weighted_tournament_winners(self):
-        winners = []
+        winners = [None, None]
+        max_fitness = [float("-inf"), float("-inf")]
+
         fitnesses = [[0.0] for i in range(3)]
         for genome in self.current_population:
             fitnesses[0].append(genome.edge_value)
@@ -141,31 +142,28 @@ class NSGA2:
         fitnesses[0].sort()
         fitnesses[1].sort()
         fitnesses[2].sort()
-        total_fitness = 0.0
+
         for genome in self.current_population:
-            total_fitness += (-genome.edge_value) * (fitnesses[0][-1] - fitnesses[0][0])
-            total_fitness += (-genome.connectivity + fitnesses[1][-1]) * (
+            genome_fitness = 0.0
+            genome_fitness += (-genome.edge_value) * (
+                fitnesses[0][-1] - fitnesses[0][0]
+            )
+            genome_fitness += (-genome.connectivity + fitnesses[1][-1]) * (
                 fitnesses[1][-1] - fitnesses[1][0]
             )
-            total_fitness += (-genome.overall_deviation + fitnesses[2][-1]) * (
+            genome_fitness += (-genome.overall_deviation + fitnesses[2][-1]) * (
                 fitnesses[2][-1] - fitnesses[2][0]
             )
-        for tournaments in range(2):
-            genome_fit = np.random.random() * total_fitness
-            running_fit = 0.0
-            for genome in self.current_population:
-                running_fit += (-genome.edge_value) * (
-                    fitnesses[0][-1] - fitnesses[0][0]
-                )
-                running_fit += (-genome.connectivity + fitnesses[1][-1]) * (
-                    fitnesses[1][-1] - fitnesses[1][0]
-                )
-                running_fit += (-genome.overall_deviation + fitnesses[2][-1]) * (
-                    fitnesses[2][-1] - fitnesses[2][0]
-                )
-                if running_fit >= genome_fit:
-                    winners.append(genome)
-                    break
+
+            if genome_fitness > max_fitness[0]:
+                max_fitness[1] = max_fitness[0]
+                winners[1] = winners[0]
+                max_fitness[0] = genome_fitness
+                winners[0] = genome
+            elif genome_fitness > max_fitness[1]:
+                max_fitness[1] = genome_fitness
+                winners[1] = genome
+
         return winners
 
     def crossover(self, genome1, genome2, number_of_selections):
