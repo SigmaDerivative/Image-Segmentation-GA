@@ -135,32 +135,3 @@ def get_crossover_indices(nr_of_sections: int) -> List[List[int]]:
         selection_sets[index].append(coords[0] * problem.image_shape[1] + coords[1])
 
     return selection_sets
-
-
-def get_border_pixels(
-    pixel_nodes: Dict[Tuple[int, int], PixelNode]
-) -> Dict[PixelNode, List[PixelNode]]:
-    border_pixels = defaultdict(list)
-    for row in range(problem.image_shape[0]):
-        for col in range(problem.image_shape[1]):
-            coords = (row, col)
-            current_pixel = pixel_nodes[coords]
-            if is_border_pixel(coords, pixel_nodes):
-                border_pixels[current_pixel.root].append(current_pixel)
-
-    return border_pixels
-
-
-def is_border_pixel(
-    coords: Tuple[int, int], pixel_nodes: Dict[Tuple[int, int], PixelNode]
-) -> bool:
-    root = pixel_nodes[coords].root
-    for i in range(1, 5):  # 4 nearest neighbors
-        neigh_coords = (
-            coords[0] + problem.neighbors_map[i][0],
-            coords[1] + problem.neighbors_map[i][1],
-        )
-        if neigh_coords in pixel_nodes:
-            if pixel_nodes[neigh_coords].root != root:
-                return True
-    return False
