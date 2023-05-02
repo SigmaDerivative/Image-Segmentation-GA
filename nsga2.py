@@ -20,6 +20,7 @@ class GAConfig:
     num_epochs: int
     mutation_rate: float
     crossover_sections: int
+    num_children: int
 
 
 class NSGA2:
@@ -68,15 +69,15 @@ class NSGA2:
         self.initiate(config)
 
         for _ in range(config.num_epochs):
-            self.epoch()
+            self.epoch(config.num_children)
 
         self.finish()
 
-    def epoch(self) -> None:
+    def epoch(self, num_children: int) -> None:
         print("Starting generation number " + str(self.generation))
         before = time.time()
 
-        while len(self.next_population) < self.size * 2:
+        while len(self.next_population) < self.size + num_children:
             tournament_winners = self.get_tournament_winners()
             self.crossover(
                 tournament_winners[0], tournament_winners[1], self.crossover_sections

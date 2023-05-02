@@ -175,8 +175,8 @@ def generate_k_meaned_segmentation(flat: bool = False) -> np.ndarray:
         np.ndarray: segmentation.
     """
     # randomize how many clusters
-    n_clusters = np.random.randint(4, 7)
-    filter_sigma = np.random.uniform(2, 3.5)
+    n_clusters = np.random.randint(3, 6)
+    filter_sigma = np.random.uniform(2, 3)
     # generate clusters with k nearest neighbors
     # settings for faster runtime
     neigh = KMeans(n_clusters=n_clusters, n_init=3, max_iter=40).fit(

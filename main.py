@@ -19,8 +19,8 @@ def main():
     os.makedirs("output/type2/", exist_ok=True)
 
     before = time.time()
-    nsga = NSGA2(size=3)
-    ga_config = GAConfig(2, 0.3, 2)
+    nsga = NSGA2(size=26)
+    ga_config = GAConfig(3, 0.3, 3, 14)
     # nsga.weighted_run(ga_config)
     nsga.run(ga_config)
 
