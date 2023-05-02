@@ -5,6 +5,19 @@ import problem
 from segmentation import calculate_segmentation
 
 
+def color_distance(color1, color2):
+    """Calculate the distance between two colors.
+
+    Args:
+        color1 (np.ndarray): Color 1.
+        color2 (np.ndarray): Color 2.
+
+    Returns:
+        float: Distance between the two colors.
+    """
+    return np.sqrt(np.sum((color1 - color2) ** 2))
+
+
 def calculate_edge_value(segmentation):
     """Calculate the edge value of the genome.
 
