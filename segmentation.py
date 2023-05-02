@@ -1,5 +1,6 @@
 import numpy as np
 import problem
+from numba import jit
 
 
 class DisjointSetForest:
@@ -26,6 +27,7 @@ class DisjointSetForest:
                 self.rank[root_x] += 1
 
 
+@jit(nopython=True)
 def is_connected(arr, r1, c1, r2, c2):
     if r1 == r2:
         if c1 == c2 - 1:
