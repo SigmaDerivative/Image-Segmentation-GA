@@ -1,5 +1,7 @@
 import numpy as np
 
+import problem
+
 
 def is_connected(arr, r1, c1, r2, c2):
     if r1 == r2 and c1 == c2 - 1 and (arr[r1, c1] == 1 or arr[r2, c2] == 2):
@@ -14,18 +16,30 @@ def is_connected(arr, r1, c1, r2, c2):
 
 
 def dfs(arr, visited, groups, group_id, r, c):
+    stack = [(r, c)]
     visited[r, c] = True
     groups[r, c] = group_id
 
     directions = [(0, 1), (0, -1), (-1, 0), (1, 0)]
-    for _, direc in enumerate(directions):
-        r2, c2 = r + direc[0], c + direc[1]
-        if 0 <= r2 < arr.shape[0] and 0 <= c2 < arr.shape[1]:
-            if is_connected(arr, r, c, r2, c2) and not visited[r2, c2]:
-                dfs(arr, visited, groups, group_id, r2, c2)
+
+    while stack:
+        current_r, current_c = stack.pop()
+
+        for direc in directions:
+            r2, c2 = current_r + direc[0], current_c + direc[1]
+
+            if 0 <= r2 < arr.shape[0] and 0 <= c2 < arr.shape[1]:
+                if (
+                    is_connected(arr, current_r, current_c, r2, c2)
+                    and not visited[r2, c2]
+                ):
+                    stack.append((r2, c2))
+                    visited[r2, c2] = True
+                    groups[r2, c2] = group_id
 
 
 def calculate_segmentation(genome):
+    genome = genome.reshape(problem.image_shape[0], problem.image_shape[1])
     visited = np.zeros_like(genome, dtype=bool)
     groups = np.zeros_like(genome, dtype=int)
     group_id = 0
