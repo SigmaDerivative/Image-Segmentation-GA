@@ -2,14 +2,15 @@
 from dataclasses import dataclass
 import random
 from typing import List
+import time
 
 import numpy as np
 from tqdm import tqdm
 
 import problem
 from genome import Genome
-from initializations import generate_mst_genome
-from trees import get_crossover_indices
+from initializations import generate_mst_genome, generate_clustered_genome
+from trees import get_crossover_indices, get_crossover_indices_from_genomes
 from visualization import plot_type_3, plot_type_2, plot_type_1
 from segmentation import calculate_segmentation
 
@@ -39,8 +40,25 @@ class NSGA2:
         self.mutation_rate = config.mutation_rate
         self.crossover_sections = config.crossover_sections
         for _ in tqdm(range(self.size)):
-            genome = generate_mst_genome(flat=True)
-            self.current_population.append(Genome(genome, self.mutation_rate))
+            if np.random.uniform() < 0.5:
+                genome = generate_mst_genome(flat=True)
+            else:
+                genome = generate_clustered_genome(flat=True)
+            g = Genome(genome, self.mutation_rate)
+            g.update_fitness()
+            self.current_population.append(g)
+
+    def finish(self) -> None:
+        i = 0
+        ranks = self.get_ranks()
+        for genome in ranks[0]:
+            seg = calculate_segmentation(genome.genome)
+            plot_type_2(seg)
+            plot_type_1(seg)
+            i += 1
+            if i == 5:
+                break
+        print("Done!")
 
     def run(self, config: GAConfig) -> None:
         self.initiate(config)
@@ -48,14 +66,11 @@ class NSGA2:
         for _ in range(config.num_epochs):
             self.epoch()
 
-        for genome in self.current_population:
-            seg = calculate_segmentation(genome.genome)
-            plot_type_2(seg)
-            plot_type_1(seg)
-        print("Done!")
+        self.finish()
 
     def epoch(self) -> None:
         print("Starting generation number " + str(self.generation))
+        before = time.time()
 
         while len(self.next_population) < self.size * 2:
             tournament_winners = self.get_tournament_winners()
@@ -83,11 +98,15 @@ class NSGA2:
 
         self.generation += 1
 
+        after = time.time()
+        print("Generation took " + str(after - before) + " seconds.")
+
     def weighted_run(self, config: GAConfig) -> None:
         self.initiate(config)
 
         for generation in range(config.num_epochs):
             print("Starting generation number " + str(generation))
+            before = time.time()
             while len(self.next_population) < self.size:
                 tournament_winners = self.get_weighted_tournament_winners()
                 self.crossover(
@@ -98,12 +117,10 @@ class NSGA2:
             self.current_population = list(self.next_population)
             self.next_population = []
             self.generation += 1
+            after = time.time()
+            print("Generation took " + str(after - before) + " seconds.")
 
-        # Draws image
-        for genome in self.current_population:
-            seg = calculate_segmentation(genome.genome)
-            plot_type_2(seg)
-            plot_type_1(seg)
+        self.finish()
 
     def get_tournament_winners(self):
         winners = []
@@ -156,9 +173,14 @@ class NSGA2:
         return winners
 
     def crossover(self, genome1, genome2, number_of_selections):
-        crossover_indices = get_crossover_indices(number_of_selections)
         raw_genome_1 = genome1.genome[:]
         raw_genome_2 = genome2.genome[:]
+        if np.random.uniform() > 0.5:
+            crossover_indices = get_crossover_indices(number_of_selections)
+        else:
+            crossover_indices = get_crossover_indices_from_genomes(
+                [raw_genome_1, raw_genome_2]
+            )
         for i in range(0, number_of_selections, 2):
             indexes = crossover_indices[i]
             for index in indexes:
@@ -214,18 +236,3 @@ class NSGA2:
             rank += 1
 
         return ranked_nodes
-
-
-def main():
-    import time
-
-    before = time.time()
-    nsga = NSGA2(size=25)
-    ga_config = GAConfig(10, 0.001, 2)
-    nsga.run(ga_config)
-    after = time.time()
-    print("Time taken: ", after - before)
-
-
-if __name__ == "__main__":
-    main()

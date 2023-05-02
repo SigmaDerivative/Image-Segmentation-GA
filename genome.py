@@ -24,7 +24,6 @@ class Genome:
         self.dominated_by = 0
         self.rank = 0
         self.image_width, self.image_height = problem.image_shape[:2]
-        self.update_fitness()
 
     def mutate(self):
         mutation_rate = self.mutation_rate
