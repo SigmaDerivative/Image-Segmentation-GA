@@ -1,10 +1,31 @@
 import numpy as np
-from numba import njit
-
 import problem
 
 
-@njit
+class DisjointSetForest:
+    def __init__(self, size):
+        self.parent = list(range(size))
+        self.rank = [0] * size
+
+    def find(self, x):
+        if self.parent[x] != x:
+            self.parent[x] = self.find(self.parent[x])
+        return self.parent[x]
+
+    def union(self, x, y):
+        root_x, root_y = self.find(x), self.find(y)
+
+        if root_x == root_y:
+            return
+
+        if self.rank[root_x] < self.rank[root_y]:
+            self.parent[root_x] = root_y
+        else:
+            self.parent[root_y] = root_x
+            if self.rank[root_x] == self.rank[root_y]:
+                self.rank[root_x] += 1
+
+
 def is_connected(arr, r1, c1, r2, c2):
     if r1 == r2:
         if c1 == c2 - 1:
@@ -19,39 +40,31 @@ def is_connected(arr, r1, c1, r2, c2):
     return False
 
 
-def dfs(arr, visited, groups, group_id, r, c):
-    stack = [(r, c)]
-    visited[r, c] = True
-    groups[r, c] = group_id
-
+def calculate_segmentation(genome):
+    rows, cols = problem.image_shape[0], problem.image_shape[1]
+    genome = genome.reshape(rows, cols)
+    dsf = DisjointSetForest(rows * cols)
     directions = [(0, 1), (0, -1), (-1, 0), (1, 0)]
 
-    while stack:
-        current_r, current_c = stack.pop()
-
-        for direc in directions:
-            r2, c2 = current_r + direc[0], current_c + direc[1]
-
-            if 0 <= r2 < arr.shape[0] and 0 <= c2 < arr.shape[1]:
+    for r in range(rows):
+        for c in range(cols):
+            for dr, dc in directions:
+                r2, c2 = r + dr, c + dc
                 if (
-                    is_connected(arr, current_r, current_c, r2, c2)
-                    and not visited[r2, c2]
+                    0 <= r2 < rows
+                    and 0 <= c2 < cols
+                    and is_connected(genome, r, c, r2, c2)
                 ):
-                    stack.append((r2, c2))
-                    visited[r2, c2] = True
-                    groups[r2, c2] = group_id
+                    dsf.union(r * cols + c, r2 * cols + c2)
 
+    groups = np.zeros((rows, cols), dtype=int)
+    group_ids = {}
 
-def calculate_segmentation(genome):
-    genome = genome.reshape(problem.image_shape[0], problem.image_shape[1])
-    visited = np.zeros_like(genome, dtype=bool)
-    groups = np.zeros_like(genome, dtype=int)
-    group_id = 0
-
-    for r in range(genome.shape[0]):
-        for c in range(genome.shape[1]):
-            if not visited[r, c]:
-                dfs(genome, visited, groups, group_id, r, c)
-                group_id += 1
+    for r in range(rows):
+        for c in range(cols):
+            root = dsf.find(r * cols + c)
+            if root not in group_ids:
+                group_ids[root] = len(group_ids)
+            groups[r, c] = group_ids[root]
 
     return groups
