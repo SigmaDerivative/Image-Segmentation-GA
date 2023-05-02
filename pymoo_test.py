@@ -11,7 +11,7 @@ from pymoo.optimize import minimize
 from initializations import generate_mst_genome
 from evaluations import evaluate_population
 from segmentation import calculate_segmentation
-from visualization import plot_type_2
+from visualization import plot_type_3
 import problem
 
 
@@ -62,7 +62,7 @@ def main():
         segmentation = calculate_segmentation(genome)
         # visualize the segments
         # plot_type_2(genome)
-        plot_type_2(segmentation)
+        plot_type_3(segmentation)
 
 
 if __name__ == "__main__":

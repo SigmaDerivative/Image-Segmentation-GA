@@ -79,16 +79,13 @@ def generate_mst_genome(flat: bool = True) -> np.ndarray:
 if __name__ == "__main__":
     import time
     from tqdm import tqdm
+    from visualization import plot_type_2
+    from segmentation import calculate_segmentation
 
     before = time.time()
-    for _ in tqdm(range(5)):
-        genome = generate_mst_genome()
-
-        # from visualization import plot_type_2
-        # from segmentation import calculate_segmentation
-
-        # seg = calculate_segmentation(genome)
-
+    genome = generate_mst_genome()
     print(f"{time.time() - before} seconds")
 
-    # plot_type_2(seg)
+    seg = calculate_segmentation(genome)
+
+    plot_type_2(seg)
