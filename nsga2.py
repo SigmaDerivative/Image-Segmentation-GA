@@ -9,7 +9,7 @@ from genome import Genome
 from initializations import generate_mst_genome
 from trees import get_crossover_indices
 import problem
-from visualization import plot_type_3
+from visualization import plot_type_3, plot_type_2, plot_type_1
 from segmentation import calculate_segmentation
 
 
@@ -49,7 +49,8 @@ class NSGA2:
 
         for genome in self.current_population:
             seg = calculate_segmentation(genome.genome)
-            plot_type_3(seg)
+            plot_type_2(seg)
+            plot_type_1(seg)
         print("Done!")
 
     def epoch(self) -> None:
@@ -109,7 +110,8 @@ class NSGA2:
         # Draws image
         for genome in self.current_population:
             seg = calculate_segmentation(genome.genome)
-            plot_type_3(seg)
+            plot_type_2(seg)
+            plot_type_1(seg)
 
     def mutate_genome(self, genome):
         genome.mutate()
