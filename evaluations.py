@@ -5,17 +5,8 @@ import problem
 from segmentation import calculate_segmentation
 
 
-def color_distance(color1, color2):
-    """Calculate the distance between two colors.
-
-    Args:
-        color1 (np.ndarray): Color 1.
-        color2 (np.ndarray): Color 2.
-
-    Returns:
-        float: Distance between the two colors.
-    """
-    return np.sqrt(np.sum((color1 - color2) ** 2))
+def color_distance(a, b):
+    return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2) ** 0.5
 
 
 def calculate_edge_value(segmentation):
@@ -144,7 +135,7 @@ def evaluate_population_from_segments(segments):
 
 def main():
     """Main function."""
-    from visualization import plot_type_2
+    from visualization import plot_type_3
 
     population = np.random.randint(
         1, 3, (4, problem.image_shape[0], problem.image_shape[1])
@@ -158,7 +149,7 @@ def main():
     # evals = evaluate_population_from_segments(population)
     print(evals)
     segment = calculate_segmentation(population[0])
-    plot_type_2(segment)
+    plot_type_3(segment)
 
 
 if __name__ == "__main__":
