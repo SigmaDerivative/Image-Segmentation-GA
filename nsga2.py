@@ -184,26 +184,6 @@ class NSGA2:
         child2.mutate()
         self.next_population.append(child2)
 
-    def get_crowding_list(self, rank):
-        crowding_list = list(rank)
-        objectives = [[], [], []]
-        for genome in rank:
-            objectives[0].append(genome.edge_value)
-            objectives[1].append(genome.connectivity)
-            objectives[2].append(genome.overall_deviation)
-        sorted(objectives[0])
-        sorted(objectives[1])
-        sorted(objectives[2])
-        sorted_genomes = list(rank)
-        for index in range(3):
-            new_sorted_genomes = []
-            for genome in sorted_genomes:
-                if genome.edge_value == objectives[0][0]:
-                    new_sorted_genomes.append(genome)
-                    objectives[0].pop(0)
-                sorted_genomes = list(new_sorted_genomes)
-        return crowding_list
-
     def get_ranks(self):
         def dominates(genome1, genome2):
             less_equal = (
