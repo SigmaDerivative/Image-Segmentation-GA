@@ -248,9 +248,14 @@ class NSGA2:
 
 
 def main():
-    nsga = NSGA2(size=3)
-    ga_config = GAConfig(3, 1, 2)
+    import time
+
+    before = time.time()
+    nsga = NSGA2(size=25)
+    ga_config = GAConfig(10, 0.001, 2)
     nsga.run(ga_config)
+    after = time.time()
+    print("Time taken: ", after - before)
 
 
 if __name__ == "__main__":
