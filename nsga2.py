@@ -1,14 +1,15 @@
 """Implementation of NSGA-II algorithm."""
 from dataclasses import dataclass
 import random
+from typing import List
 
 import numpy as np
 from tqdm import tqdm
 
+import problem
 from genome import Genome
 from initializations import generate_mst_genome
 from trees import get_crossover_indices
-import problem
 from visualization import plot_type_3, plot_type_2, plot_type_1
 from segmentation import calculate_segmentation
 
@@ -54,49 +55,39 @@ class NSGA2:
         print("Done!")
 
     def epoch(self) -> None:
-        print("Starting generation nr " + str(self.generation))
+        print("Starting generation number " + str(self.generation))
 
-        # Keep adding new genomes to the next population until it reaches the pool size multiplied by 2
         while len(self.next_population) < self.size * 2:
             tournament_winners = self.get_tournament_winners()
             self.crossover(
                 tournament_winners[0], tournament_winners[1], self.crossover_sections
             )
 
-        # Create a new list for the current population
         current_population = []
 
-        # Get the ranks for the genomes
         ranks = self.get_ranks()
 
-        # Loop through the ranks
         for rank in enumerate(ranks):
-            # If adding the entire rank to the current population won't exceed the pool size
             if len(rank) + len(current_population) <= self.size:
                 current_population += rank[1]
-            # If adding the entire rank will exceed the pool size,
-            # shuffle the rank and add as many genomes as needed to reach the pool size
             elif len(current_population) < self.size:
                 random.shuffle(rank[1])
                 index = 0
                 while len(current_population) < self.size:
                     current_population.append(rank[1][index])
                     index += 1
-            # If the current population already has the desired pool size, exit the loop
             else:
                 break
 
-        # Copy the current population to the next population
         self.next_population = current_population.copy()
 
-        # Increment the generation count
         self.generation += 1
 
     def weighted_run(self, config: GAConfig) -> None:
         self.initiate(config)
 
         for generation in range(config.num_epochs):
-            print("Starting generation nr " + str(generation))
+            print("Starting generation number " + str(generation))
             while len(self.next_population) < self.size:
                 tournament_winners = self.get_weighted_tournament_winners()
                 self.crossover(
@@ -106,15 +97,13 @@ class NSGA2:
                 )
             self.current_population = list(self.next_population)
             self.next_population = []
+            self.generation += 1
 
         # Draws image
         for genome in self.current_population:
             seg = calculate_segmentation(genome.genome)
             plot_type_2(seg)
             plot_type_1(seg)
-
-    def mutate_genome(self, genome):
-        genome.mutate()
 
     def get_tournament_winners(self):
         winners = []
@@ -184,7 +173,7 @@ class NSGA2:
         child2.mutate()
         self.next_population.append(child2)
 
-    def get_ranks(self):
+    def get_ranks(self) -> List[List[Genome]]:
         def dominates(genome1, genome2):
             less_equal = (
                 genome1.edge_value <= genome2.edge_value
