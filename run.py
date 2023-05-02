@@ -98,3 +98,7 @@ def evaluate(verbose=False):
     a = totalScore / len(studentFiles) * 100
     if verbose:
         print("Total Average Score: %.2f" % a + "%")
+
+
+if __name__ == "__main__":
+    evaluate(verbose=True)
