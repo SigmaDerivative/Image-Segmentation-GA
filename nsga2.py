@@ -205,45 +205,45 @@ class NSGA2:
         return crowding_list
 
     def get_ranks(self):
+        def dominates(genome1, genome2):
+            less_equal = (
+                genome1.edge_value <= genome2.edge_value
+                and genome1.connectivity <= genome2.connectivity
+                and genome1.overall_deviation <= genome2.overall_deviation
+            )
+            strictly_less = (
+                genome1.edge_value < genome2.edge_value
+                or genome1.connectivity < genome2.connectivity
+                or genome1.overall_deviation < genome2.overall_deviation
+            )
+            return less_equal and strictly_less
+
         for genome in self.next_population:
             for dominated_genome in self.next_population:
-                if genome != dominated_genome:
-                    if (
-                        genome.edge_value <= dominated_genome.edge_value
-                        and genome.connectivity <= dominated_genome.connectivity
-                        and genome.overall_deviation
-                        <= dominated_genome.overall_deviation
-                    ):
-                        if (
-                            genome.edge_value < dominated_genome.edge_value
-                            or genome.connectivity < dominated_genome.connectivity
-                            or genome.overall_deviation
-                            < dominated_genome.overall_deviation
-                        ):
-                            genome.dominate_genome(dominated_genome)
-        ranked_nodes = []
-        rank0 = []
-        rank1 = []
-        for genome in self.next_population:
-            if genome.dominated_by == 0:
-                if genome.connectivity < 100.0:
-                    rank1.append(genome)
-                rank0.append(genome)
-        if len(rank0) > 0 and len(rank1) > 0:
+                if genome != dominated_genome and dominates(genome, dominated_genome):
+                    genome.dominate_genome(dominated_genome)
+
+        rank0 = [genome for genome in self.next_population if genome.dominated_by == 0]
+        rank1 = [genome for genome in rank0 if genome.connectivity < 100.0]
+
+        if rank0 and rank1:
             for genome in rank1:
                 rank0[0].dominate_genome(genome)
                 rank0.remove(genome)
-        ranked_nodes.append(rank0)
+
+        ranked_nodes = [rank0]
         rank = 0
+
         while rank < len(ranked_nodes):
             rank_n = []
             for genome in ranked_nodes[rank]:
                 next_rank = genome.get_next_rank(rank)
-                if len(next_rank) > 0:
+                if next_rank:
                     rank_n.extend(next_rank)
-            if len(rank_n) > 0:
+            if rank_n:
                 ranked_nodes.append(rank_n)
             rank += 1
+
         return ranked_nodes
 
 
