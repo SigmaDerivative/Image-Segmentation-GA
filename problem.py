@@ -30,3 +30,21 @@ neighbors_map = {
     7: np.array([-1, 1]),
     8: np.array([-1, -1]),
 }
+
+
+def get_direction(coords1, coords2):
+    """Get the direction from coords1 to coords2.
+
+    Args:
+        coords1 (Tuple[int, int]): Coordinates of the first pixel.
+        coords2 (Tuple[int, int]): Coordinates of the second pixel.
+
+    Returns:
+        int: Direction from coords1 to coords2.
+    """
+    direction = np.array(coords2) - np.array(coords1)
+    for key, value in neighbors_map.items():
+        if np.array_equal(value, direction):
+            return key
+
+    raise ValueError(f"Could not find direction from {coords1} to {coords2}.")
