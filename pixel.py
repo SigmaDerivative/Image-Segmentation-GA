@@ -9,7 +9,7 @@ class PixelNode:
         col: int,
         parent,
         edge_distance: float,
-        neighbour_direction: int,
+        neighbor_direction: int,
         reverse_direction: bool,
     ):
         self.row = row
@@ -19,19 +19,19 @@ class PixelNode:
         self.root = None
         self.distance_from_start = 0.0
         self.traversed = False
-        self.neighbour_direction = neighbour_direction
+        self.neighbor_direction = neighbor_direction
 
         if parent is not None:
             self.distance_from_start = parent.distance_from_start + edge_distance
             if reverse_direction:
-                self.neighbour_direction = int(
-                    neighbour_direction + (-1) ** (neighbour_direction % 2 + 1)
+                self.neighbor_direction = int(
+                    neighbor_direction + (-1) ** (neighbor_direction % 2 + 1)
                 )
             else:
-                self.neighbour_direction = neighbour_direction
+                self.neighbor_direction = neighbor_direction
         else:
             self.traversed = True
-            self.neighbour_direction = neighbour_direction
+            self.neighbor_direction = neighbor_direction
             self.root = self
 
     def __lt__(self, other):
@@ -40,17 +40,17 @@ class PixelNode:
         return self.distance_from_start < other.distance_from_start
 
     def update_shortest_distance(
-        self, parent, edge_distance: float, neighbour_direction: int
+        self, parent, edge_distance: float, neighbor_direction: int
     ):
         if self.distance_from_start > edge_distance:
             self.parent = parent
             self.distance_from_start = edge_distance
-            if neighbour_direction != 0:
-                self.neighbour_direction = int(
-                    neighbour_direction + (-1) ** (neighbour_direction % 2 + 1)
+            if neighbor_direction != 0:
+                self.neighbor_direction = int(
+                    neighbor_direction + (-1) ** (neighbor_direction % 2 + 1)
                 )
             else:
-                self.neighbour_direction = 0
+                self.neighbor_direction = 0
 
     def update_grand_root(self, change_root: bool):
         orphans = []
@@ -80,35 +80,35 @@ class PixelNode:
         if child not in self.children:
             self.children.append(child)
 
-    def get_updated_neighbours(self, pixel_nodes):
+    def get_updated_neighbors(self, pixel_nodes):
         neighbors_map = problem.neighbors_map
         image_height, image_width = problem.image_shape[:2]
         rgb_matrix = problem.image
 
-        neighbours = []
+        neighbors = []
         for i in range(1, 5):
-            neighbour_addition = neighbors_map[i]
+            neighbor_addition = neighbors_map[i]
             neigh_row, neigh_col = (
-                self.row + neighbour_addition[0],
-                self.col + neighbour_addition[1],
+                self.row + neighbor_addition[0],
+                self.col + neighbor_addition[1],
             )
-            neighbour_coords = (neigh_row, neigh_col)
+            neighbor_coords = (neigh_row, neigh_col)
 
             if not (0 <= neigh_row < image_height and 0 <= neigh_col < image_width):
                 continue
 
             this_color = rgb_matrix[self.row, self.col]
-            neighbour_color = rgb_matrix[neigh_row, neigh_col]
-            color_dist = color_distance(this_color, neighbour_color)
+            neighbor_color = rgb_matrix[neigh_row, neigh_col]
+            color_dist = color_distance(this_color, neighbor_color)
 
-            if neighbour_coords in pixel_nodes:
-                neighbour = pixel_nodes[neighbour_coords]
-                if not neighbour.traversed:
-                    neighbour.update_shortest_distance(self, color_dist, i)
-                    neighbours.append(neighbour)
+            if neighbor_coords in pixel_nodes:
+                neighbor = pixel_nodes[neighbor_coords]
+                if not neighbor.traversed:
+                    neighbor.update_shortest_distance(self, color_dist, i)
+                    neighbors.append(neighbor)
             else:
-                neighbour = PixelNode(neigh_row, neigh_col, self, color_dist, i, True)
-                neighbours.append(neighbour)
-                pixel_nodes[neighbour_coords] = neighbour
+                neighbor = PixelNode(neigh_row, neigh_col, self, color_dist, i, True)
+                neighbors.append(neighbor)
+                pixel_nodes[neighbor_coords] = neighbor
 
-        return neighbours
+        return neighbors

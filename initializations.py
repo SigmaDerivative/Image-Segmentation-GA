@@ -58,32 +58,9 @@ def generate_mst_genome(flat: bool = True) -> np.ndarray:
 
 
 def generate_clustered_genome(flat: bool = True) -> np.ndarray:
-    image_height, image_width, _ = problem.image_shape
-
     segmentation = generate_k_meaned_segmentation()
-    plot_type_3(segmentation)
-    tree_split_image = segmentation_to_trees(segmentation)
-
-    genome = np.array(
-        [pixel_node.neighbor_direction for pixel_node in tree_split_image.values()]
-    ).astype(np.uint8)
-    if not flat:
-        genome = genome.reshape(image_height, image_width)
+    genome = segmentation_to_trees(segmentation).astype(np.uint8)
+    # convert from pixel_nodes to genome
+    if flat:
+        genome = genome.flatten()
     return genome
-
-
-if __name__ == "__main__":
-    import time
-    from tqdm import tqdm
-    from visualization import plot_type_2, plot_type_3, plot_type_1
-    from segmentation import calculate_segmentation
-
-    before = time.time()
-    # genome = generate_mst_genome()
-    gen = generate_clustered_genome()
-    # print([a for a in gen])
-    print(f"{time.time() - before} seconds")
-
-    seg = calculate_segmentation(gen)
-
-    plot_type_2(seg)
