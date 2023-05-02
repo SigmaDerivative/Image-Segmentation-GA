@@ -4,14 +4,16 @@ import problem
 
 
 def is_connected(arr, r1, c1, r2, c2):
-    if r1 == r2 and c1 == c2 - 1 and (arr[r1, c1] == 1 or arr[r2, c2] == 2):
-        return True
-    elif r1 == r2 and c1 == c2 + 1 and (arr[r1, c1] == 2 or arr[r2, c2] == 1):
-        return True
-    elif r1 == r2 - 1 and c1 == c2 and (arr[r1, c1] == 4 or arr[r2, c2] == 3):
-        return True
-    elif r1 == r2 + 1 and c1 == c2 and (arr[r1, c1] == 3 or arr[r2, c2] == 4):
-        return True
+    if r1 == r2:
+        if c1 == c2 - 1:
+            return arr[r1, c1] == 1 or arr[r2, c2] == 2
+        if c1 == c2 + 1:
+            return arr[r1, c1] == 2 or arr[r2, c2] == 1
+    if c1 == c2:
+        if r1 == r2 - 1:
+            return arr[r1, c1] == 4 or arr[r2, c2] == 3
+        if r1 == r2 + 1:
+            return arr[r1, c1] == 3 or arr[r2, c2] == 4
     return False
 
 
