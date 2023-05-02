@@ -181,7 +181,7 @@ class NSGA2:
             crossover_indices = get_crossover_indices_from_genomes(
                 [raw_genome_1, raw_genome_2]
             )
-        for i in range(0, number_of_selections, 2):
+        for i in range(len(crossover_indices)):
             indexes = crossover_indices[i]
             for index in indexes:
                 raw_genome_1[index], raw_genome_2[index] = (
