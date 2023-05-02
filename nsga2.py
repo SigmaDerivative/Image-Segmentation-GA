@@ -55,10 +55,14 @@ class NSGA2:
             seg = calculate_segmentation(genome.genome)
             plot_type_2(seg)
             plot_type_1(seg)
+            print(f"Solution {i}:")
+            print(f"Edge value: {genome.edge_value}")
+            print(f"Connectivity: {genome.connectivity}")
+            print(f"Deviation: {genome.overall_deviation}")
+            print()
             i += 1
             if i == 5:
                 break
-        print("Done!")
 
     def run(self, config: GAConfig) -> None:
         self.initiate(config)
