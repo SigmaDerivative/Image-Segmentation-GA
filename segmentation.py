@@ -1,8 +1,10 @@
 import numpy as np
+from numba import njit
 
 import problem
 
 
+@njit
 def is_connected(arr, r1, c1, r2, c2):
     if r1 == r2:
         if c1 == c2 - 1:

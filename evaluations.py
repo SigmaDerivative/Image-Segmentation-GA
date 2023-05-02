@@ -1,10 +1,12 @@
 import numpy as np
 import tqdm
+from numba import njit
 
 import problem
 from segmentation import calculate_segmentation
 
 
+@njit
 def color_distance(a, b):
     return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2) ** 0.5
 
