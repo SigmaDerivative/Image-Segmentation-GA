@@ -1,10 +1,12 @@
 import time
 import os
+import shutil
 import cProfile, pstats, io
 from pstats import SortKey
 
 
 from nsga2 import NSGA2, GAConfig
+from run import evaluate
 
 
 def main():
@@ -12,10 +14,19 @@ def main():
     pr = cProfile.Profile()
     pr.enable()
 
+    # remove previous output
+    shutil.rmtree("output/type2/", ignore_errors=True)
+    os.makedirs("output/type2/", exist_ok=True)
+
     before = time.time()
-    nsga = NSGA2(size=10)
-    ga_config = GAConfig(3, 0.001, 2)
+    nsga = NSGA2(size=3)
+    ga_config = GAConfig(2, 0.3, 2)
+    # nsga.weighted_run(ga_config)
     nsga.run(ga_config)
+
+    # evaluation with PRI
+    evaluate(verbose=True)
+
     after = time.time()
     print("Time taken: ", after - before)
 
