@@ -49,10 +49,14 @@ class NSGA2:
             g.update_fitness()
             self.current_population.append(g)
 
-    def finish(self) -> None:
+    def finish(self, no_rank=False) -> None:
         i = 0
-        ranks = self.get_ranks()
-        for genome in ranks[0]:
+        if no_rank:
+            genomes = self.current_population
+        else:
+            ranks = self.get_ranks()
+            genomes = ranks[0]
+        for genome in genomes:
             seg = calculate_segmentation(genome.genome)
             plot_type_2(seg)
             plot_type_1(seg)
@@ -125,7 +129,7 @@ class NSGA2:
             after = time.time()
             print("Generation took " + str(after - before) + " seconds.")
 
-        self.finish()
+        self.finish(no_rank=True)
 
     def get_tournament_winners(self):
         winners = []
