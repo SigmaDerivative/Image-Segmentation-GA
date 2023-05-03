@@ -82,6 +82,7 @@ def evaluate(verbose=False):
     optimalFiles = readFilesFromFolder(optimalFolder)
     studentFiles = readFilesFromFolder(studentFolder)
     totalScore = 0
+    top_score = 0
     for student in studentFiles:
         highestScore = 0
         for opt in optimalFiles:
@@ -91,6 +92,8 @@ def evaluate(verbose=False):
             # 			print("PRI 2: %.2f" % result2)
             result = min(result1, result2)
             highestScore = max(highestScore, result)
+        if highestScore > top_score:
+            top_score = highestScore
         totalScore += highestScore
         a = highestScore * 100
         if verbose:
@@ -98,6 +101,7 @@ def evaluate(verbose=False):
     a = totalScore / len(studentFiles) * 100
     if verbose:
         print("Total Average Score: %.2f" % a + "%")
+        print(f"Top score: {top_score * 100}%")
 
 
 if __name__ == "__main__":
